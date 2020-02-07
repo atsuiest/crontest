@@ -1,33 +1,33 @@
-FROM golang:alpine AS builder
+FROM golang:1.13-alpine AS builder 
 
-# # Set the Current Working Directory inside the container
-# WORKDIR /app
+RUN apk update && apk add git
 
-RUN apt-get update && apt-get -y install cron
+RUN adduser -D -g ‘’ appuser
 
-# # Copy go mod and sum files
-# COPY go.mod go.sum ./
+# COPY . $GOPATH/src/bupa.cl
 
-# # Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
-# RUN go mod download
+WORKDIR $GOPATH/src/crontest
 
-# Copy the source from the current directory to the Working Directory inside the container
+
+COPY go.mod .
+
+COPY go.sum .
+
+RUN go mod download
+
 COPY . .
 
-# Build the Go app
-RUN go build -o main .
+RUN  CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -ldflags="-w -s" -o /go/bin/crontest
 
-# Copy hello-cron file to the cron.d directory
-COPY hello-cron /etc/cron.d/hello-cron
+FROM scratch
 
-# Give execution rights on the cron job
-RUN chmod 0644 /etc/cron.d/hello-cron
+COPY --from=builder /etc/passwd /etc/passwd
 
-# Apply cron job
-RUN crontab /etc/cron.d/hello-cron
+USER appuser
 
-# Create the log file to be able to run tail
-RUN touch /var/log/cron.log
+COPY --from=builder /go/bin/crontest /go/bin/crontest
 
-# Run the command on container startup
-CMD cron && tail -f /var/log/cron.log
+
+#COPY . /go/bin/
+
+CMD ["/go/bin/crontest"]

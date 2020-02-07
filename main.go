@@ -1,30 +1,42 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
-	"github.com/gorilla/mux"
-	"log"
+	"fmt"
+	"io/ioutil"
 	"net/http"
+	"time"
 )
 
-// Run a Job
-func runFrequent(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	response := `{"mensaje":"Se ha ejecutado la tarea correctamente"}`
-	json.NewEncoder(w).Encode(response)
+type asd struct {
+	Current string `json:"current"`
 }
 
 func main() {
-	// current_time := time.Now()
-	// fmt.Println("Current time in String: ", current_time.Hour(), ":", current_time.Minute(), ":", current_time.Second())
-	// fmt.Println(current_time.Clock())
+	url := "http://35.193.162.111/run/frequent"
+	fmt.Println("URL:>", url)
+	current_time := time.Now()
+	t := current_time.Format("15:04:05")
+	time := &asd{}
+	current := fmt.Sprintf("%s", t)
+	time.Current = current
+	fmt.Println(time.Current)
+	jsonStr, _ := json.Marshal(time)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
+	req.Header.Set("X-Custom-Header", "myvalue")
+	req.Header.Set("Content-Type", "application/json")
+	fmt.Println("PostReq: ", req)
 
-	// Init router
-	r := mux.NewRouter()
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
 
-	// Handle endpoints
-	r.HandleFunc("/run/frequent", runFrequent).Methods("POST")
-
-	// Run server
-	log.Fatal(http.ListenAndServe(":8000", r))
+	fmt.Println("response Status:", resp.Status)
+	fmt.Println("response Headers:", resp.Header)
+	body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println("response Body:", string(body))
 }

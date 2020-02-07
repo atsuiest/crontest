@@ -1,0 +1,15 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: catmed-jobs-cron-test
+  namespace: default
+spec:
+  schedule: "*/1 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: crontest
+            image: gcr.io/catmed-jobs/crontest@sha256:ae8ceee1f0f1396feaf1c67e4fb9617f90305a353c15bc2081be75815ed11beb
+          restartPolicy: OnFailure
